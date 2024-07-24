@@ -9,6 +9,26 @@ G_OPTS="daemon off;"
 
 CONF=""
 
+wait_for_dns() {
+    local count=0
+    local max_retries=30
+    local delay=2
+
+    while [ $count -lt $max_retries ]; do
+        if nslookup movie.douban.com >/dev/null 2>&1; then
+            echo "DNS 解析正常"
+            return 0
+        else
+            echo "等待 DNS 服务..."
+            sleep $delay
+            count=$((count + 1))
+        fi
+    done
+
+    echo "DNS 服务不可用，放弃启动 Nginx"
+    return 1
+}
+
 nginx_init() {
 	[ -z "${CONF}" ] || return # already called.
 
@@ -30,6 +50,7 @@ nginx_init() {
 }
 
 start_service() {
+	wait_for_dns || exit 1
 	nginx_init
 
 	procd_open_instance
