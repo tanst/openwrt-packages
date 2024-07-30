@@ -146,7 +146,7 @@ define Package/sing-box/install
 	$(INSTALL_CONF) ./files/nftables.rules $(1)/etc/sing-box
 	$(INSTALL_DIR) $(1)/etc/init.d/
 	$(INSTALL_BIN) ./files/sing-box.init $(1)/etc/init.d/sing-box
-  $(if $(CONFIG_SING_BOX_ENABLE_BY_DEFAULT),$(INSTALL_DIR) $(1)/etc/rc.d && $(LN) ../init.d/sing-box $(1)/etc/rc.d/S99sing-box)
+	$(if $(CONFIG_SING_BOX_ENABLE_BY_DEFAULT),$(INSTALL_DIR) $(1)/etc/rc.d && $(LN) ../init.d/sing-box $(1)/etc/rc.d/S99sing-box)
 endef
 
 $(eval $(call GoBinPackage,sing-box))
