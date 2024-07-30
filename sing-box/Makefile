@@ -85,6 +85,7 @@ define Package/sing-box/config
 
     config SING_BOX_BUILD_GRPC
     bool "Build with standard gPRC support"
+    default y
     help
       Standard gRPC has good compatibility but poor performance.
 
