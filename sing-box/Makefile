@@ -51,6 +51,8 @@ define Package/sing-box
     +ca-bundle \
     +kmod-inet-diag \
     +kmod-netlink-diag \
+    +firewall4 \
+    +kmod-nft-tproxy \ 
     +(SING_BOX_BUILD_GVISOR||SING_BOX_BUILD_LWIP):kmod-tun
 endef
 
