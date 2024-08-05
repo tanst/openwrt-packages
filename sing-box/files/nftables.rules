@@ -5738,7 +5738,6 @@ table inet singbox {
 	chain prerouting {
 		type filter hook prerouting priority mangle; policy accept;
 		meta mark 0x00001ed6 return
-		ip daddr 10.10.10.0/24 meta l4proto { tcp, udp } meta mark set 0x00001ed4 tproxy ip to :5332
 		ip daddr @local_addr_v4 return
 		ip daddr @mainland_addr_v4 counter return
 		ip6 daddr @local_addr_v6 counter return
