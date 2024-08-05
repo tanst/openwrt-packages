@@ -5727,6 +5727,7 @@ table inet singbox {
 			2c0f:f7a8:9220::/48
 		}
 	}
+
 	chain input {
 		type filter hook input priority -100; policy accept;
 		ip daddr 127.0.0.1 accept
@@ -5734,19 +5735,10 @@ table inet singbox {
 		tcp dport 5330 reject
 	}
 
-	chain prerouting_dns {
-		type nat hook prerouting priority dstnat; policy accept;
-		meta mark 0x00001ed6 return
-		ip saddr != @local_addr_v4 return
-		ip6 saddr != @local_addr_v6 return
-		ip6 saddr != @mainland_addr_v6 return
-		udp dport 53 redirect to :5333
-		tcp dport 53 redirect to :5333
-	}
-
 	chain prerouting {
 		type filter hook prerouting priority mangle; policy accept;
 		meta mark 0x00001ed6 return
+		ip daddr 10.10.10.0/24 meta l4proto { tcp, udp } meta mark set 0x00001ed4 tproxy ip to :5332
 		ip daddr @local_addr_v4 return
 		ip daddr @mainland_addr_v4 counter return
 		ip6 daddr @local_addr_v6 counter return
