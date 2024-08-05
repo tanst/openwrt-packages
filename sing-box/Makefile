@@ -145,7 +145,8 @@ define Package/sing-box/install
 	$(INSTALL_CONF) $(PKG_BUILD_DIR)/release/config/config.json $(1)/etc/sing-box
 
 	$(INSTALL_DIR) $(1)/etc/sing-box/scripts
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/root/etc/sing-box/scripts/update_china_ip.sh $(1)/etc/sing-box/scripts
+	$(INSTALL_BIN) ./root/etc/sing-box/scripts/update_china_ip.sh $(1)/etc/sing-box/scripts
+
 
 	$(INSTALL_DIR) $(1)/etc/config/
 	$(INSTALL_CONF) ./files/nftables.rules $(1)/etc/sing-box
