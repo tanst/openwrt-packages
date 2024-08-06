@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # 定义下载 URL
-IPV4_URL="https://fastly.jsdelivr.net/gh/1715173329/IPCIDR-CHINA@master/ipv4.txt"
-IPV6_URL="https://fastly.jsdelivr.net/gh/1715173329/IPCIDR-CHINA@master/ipv6.txt"
+IPV4_URL="https://testingcf.jsdelivr.net/gh/1715173329/IPCIDR-CHINA@master/ipv4.txt"
+IPV6_URL="https://testingcf.jsdelivr.net/gh/1715173329/IPCIDR-CHINA@master/ipv6.txt"
 
 # 定义临时文件路径
 IPV4_TMP_FILE="/tmp/ipv4.txt"
