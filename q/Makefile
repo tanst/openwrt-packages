@@ -25,16 +25,16 @@ include $(INCLUDE_DIR)/package.mk
 include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
 
 define Package/q
-	SECTION:=net
-	CATEGORY:=Network
-	SUBMENU:=IP Addresses and Names
-	TITLE:=A tiny command-line DNS client
-	URL:=https://github.com/natesales/q
-	DEPENDS:=$(GO_ARCH_DEPENDS)
+  SECTION:=net
+  CATEGORY:=Network
+  SUBMENU:=IP Addresses and Names
+  TITLE:=A tiny command-line DNS client
+  URL:=https://github.com/natesales/q
+  DEPENDS:=$(GO_ARCH_DEPENDS)
 endef
 
 define Package/q/description
-	A tiny command line DNS client with support for UDP, TCP, DoT, DoH, DoQ and ODoH.
+  A tiny command line DNS client with support for UDP, TCP, DoT, DoH, DoQ and ODoH.
 endef
 
 define Package/q/install
