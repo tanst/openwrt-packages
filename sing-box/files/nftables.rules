@@ -2821,6 +2821,20 @@ table inet singbox {
 			     2c0f:f7a8:9220::/48 }
 	}
 
+	set proxy_addr_v4 {
+		type ipv4_addr
+		flags interval
+		auto-merge
+		elements = { 1.0.0.1, 1.1.1.1-1.1.1.2,
+			     8.8.4.4, 8.8.8.8,
+			     9.9.9.9,
+			     67.198.55.0/24, 91.108.4.0/22,
+			     91.108.56.0/24, 104.16.248.249,
+			     104.16.249.249, 109.239.140.0/24,
+			     149.112.112.112, 149.154.160.0/20,
+			     208.67.220.220, 208.67.222.222 }
+	}
+
 	chain input {
 		type filter hook input priority -100; policy accept;
 		ip daddr 127.0.0.1 accept
@@ -2832,23 +2846,23 @@ table inet singbox {
 		type filter hook prerouting priority mangle; policy accept;
 		meta mark 0x00001ed6 return
 
-		#代理 WG 网段
-		#ip daddr 10.10.10.0/24 meta l4proto { tcp, udp } meta mark set 0x00001ed4 tproxy ip to :5332
-
+		#代理指定网段
+		ip daddr @proxy_addr_v4 meta l4proto { tcp, udp } meta mark set 0x00001ed4 tproxy ip to :5332
+		
 		# IPv4 规则
 		ip daddr @local_addr_v4 return
-		ip daddr @mainland_addr_v4 counter return
+		ip daddr @mainland_addr_v4 counter packets 726 bytes 255051 return
 		ip saddr != @local_addr_v4 return
 
 		# IPv6 规则
 		ip6 daddr @local_addr_v6 return
-		ip6 daddr @mainland_addr_v6 counter return
+		ip6 daddr @mainland_addr_v6 counter packets 5887 bytes 620125 return
 		ip6 saddr != @local_addr_v6 ip6 saddr != @mainland_addr_v6 return
 
-		# 排除 tcp 端口
+		#仅代理指定 tcp 端口
 		tcp dport != { 22, 53, 80, 123, 143, 194, 443, 465, 587, 853, 993, 995, 5222, 8080, 8443 } ip daddr != 198.18.0.0/16 return
 		tcp dport != { 22, 53, 80, 123, 143, 194, 443, 465, 587, 853, 993, 995, 5222, 8080, 8443 } ip6 daddr != fc00::/7 return
-
+		
 		# TPROXY 规则
 		meta l4proto { tcp, udp } meta mark set 0x00001ed4 tproxy to :5332
 	}
