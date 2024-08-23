@@ -2835,35 +2835,71 @@ table inet singbox {
 			     208.67.220.220, 208.67.222.222 }
 	}
 
-	chain input {
-		type filter hook input priority -100; policy accept;
-		ip daddr 127.0.0.1 accept
-		tcp dport 5330 ip saddr @local_addr_v4 accept
-		tcp dport 5330 reject
-	}
-
 	chain prerouting {
 		type filter hook prerouting priority mangle; policy accept;
+
+		# 跳过 sing-box 路由标记流量 
 		meta mark 0x00001ed6 return
+		# 通过匹配用户来避免环路
+		meta skgid 5336 counter return
+		# 绕过应答流量
+		ct direction reply accept comment "Optimize: Reply Packets"
+		# 阻止无效连接状态的流量
+		ct state invalid drop
 
 		#代理指定网段
 		ip daddr @proxy_addr_v4 meta l4proto { tcp, udp } meta mark set 0x00001ed4 tproxy ip to :5332
-		
-		# IPv4 规则
-		ip daddr @local_addr_v4 return
-		ip daddr @mainland_addr_v4 counter packets 726 bytes 255051 return
-		ip saddr != @local_addr_v4 return
 
-		# IPv6 规则
-		ip6 daddr @local_addr_v6 return
-		ip6 daddr @mainland_addr_v6 counter packets 5887 bytes 620125 return
-		ip6 saddr != @local_addr_v6 ip6 saddr != @mainland_addr_v6 return
-
-		#仅代理指定 tcp 端口
+		#仅代理指定端口
 		tcp dport != { 22, 53, 80, 123, 143, 194, 443, 465, 587, 853, 993, 995, 5222, 8080, 8443 } ip daddr != 198.18.0.0/16 return
 		tcp dport != { 22, 53, 80, 123, 143, 194, 443, 465, 587, 853, 993, 995, 5222, 8080, 8443 } ip6 daddr != fc00::/7 return
+		udp dport != { 22, 53, 80, 123, 143, 194, 443, 465, 587, 853, 993, 995, 5222, 8080, 8443,19302 } ip daddr != 198.18.0.0/16 return
+		udp dport != { 22, 53, 80, 123, 143, 194, 443, 465, 587, 853, 993, 995, 5222, 8080, 8443,19302 } ip6 daddr != fc00::/7 return
+
+		# 绕过私有和特殊 IP 地址
+		ip daddr @local_addr_v4 counter return
+		ip daddr @mainland_addr_v4 counter return
+		ip6 daddr @local_addr_v6 counter return
+		ip6 daddr @mainland_addr_v6 counter return
+
+		# 仅对公网 IPv6 地址启用代理
+		ip6 daddr != 2000::/3 counter return
+
+		# 重定向流量到 TProxy 端口
+		meta l4proto { tcp, udp } counter tproxy to :5332 meta mark set 0x00001ed4 accept
+	}
+
+	chain output {
+		type route hook output priority mangle; policy accept;
+
+		# 跳过 sing-box 路由标记流量 
+		meta mark 0x00001ed6 return
+		# 通过匹配用户来避免环路
+		meta skgid 5336 counter return
+		# 绕过应答流量
+		ct direction reply accept comment "Optimize: Reply Packets"
+		# 阻止无效连接状态的流量
+		ct state invalid drop
+
+		#代理指定网段
+		ip daddr @proxy_addr_v4 meta l4proto { tcp, udp } meta mark set 0x00001ed4
 		
-		# TPROXY 规则
-		meta l4proto { tcp, udp } meta mark set 0x00001ed4 tproxy to :5332
+		#仅代理指定端口
+		tcp dport != { 22, 53, 80, 123, 143, 194, 443, 465, 587, 853, 993, 995, 5222, 8080, 8443 } ip daddr != 198.18.0.0/16 return
+		tcp dport != { 22, 53, 80, 123, 143, 194, 443, 465, 587, 853, 993, 995, 5222, 8080, 8443 } ip6 daddr != fc00::/7 return
+		udp dport != { 22, 53, 80, 123, 143, 194, 443, 465, 587, 853, 993, 995, 5222, 8080, 8443,19302 } ip daddr != 198.18.0.0/16 return
+		udp dport != { 22, 53, 80, 123, 143, 194, 443, 465, 587, 853, 993, 995, 5222, 8080, 8443,19302 } ip6 daddr != fc00::/7 return
+
+		# 绕过私有和特殊 IP 地址
+		ip daddr @local_addr_v4 counter return
+		ip daddr @mainland_addr_v4 counter return
+		ip6 daddr @local_addr_v6 counter return
+		ip6 daddr @mainland_addr_v6 counter return
+
+		# 仅对公网 IPv6 地址启用代理
+		ip6 daddr != 2000::/3 counter return
+
+		# 重路由 OUTPUT 链流量到 PREROUTING 链
+		meta l4proto { tcp, udp } counter meta mark set 0x00001ed4
 	}
 }

@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sing-box
-PKG_VERSION:=1.9.3
+PKG_VERSION:=1.9.4
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/SagerNet/sing-box/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=ab3d321860f973151e773c0c4a1478ab31ed63d89e17c7ac618cf50b232dd1c4
+PKG_HASH:=skip
 
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=LICENSE
@@ -54,6 +54,7 @@ define Package/sing-box
     +firewall4 \
     +kmod-nft-tproxy \
     +(SING_BOX_BUILD_GVISOR||SING_BOX_BUILD_LWIP):kmod-tun
+  USERID:=sing-box=0:sing-box=5336  
 endef
 
 define Package/sing-box/description
@@ -133,11 +134,6 @@ GO_PKG_TAGS:=$(subst $(space),$(comma),$(strip \
 	$(if $(CONFIG_SING_BOX_BUILD_WIREGUARD),with_wireguard) \
 ))
 
-define Package/sing-box/conffiles
-/etc/config/sing-box
-/etc/sing-box/
-endef
-
 define Package/sing-box/install
 	$(call GoPackage/Package/Install/Bin,$(1))
 
@@ -149,7 +145,7 @@ define Package/sing-box/install
 
 
 	$(INSTALL_DIR) $(1)/etc/config/
-	$(INSTALL_CONF) ./files/nftables.rules $(1)/etc/sing-box
+	$(INSTALL_CONF) ./files/tproxy.nft $(1)/etc/sing-box
 	$(INSTALL_DIR) $(1)/etc/init.d/
 	$(INSTALL_BIN) ./files/sing-box.init $(1)/etc/init.d/sing-box
 	$(if $(CONFIG_SING_BOX_ENABLE_BY_DEFAULT),$(INSTALL_DIR) $(1)/etc/rc.d && $(LN) ../init.d/sing-box $(1)/etc/rc.d/S99sing-box)

@@ -1,28 +1,24 @@
 #!/bin/bash
 
 # 定义下载 URL
-IPV4_URL="https://testingcf.jsdelivr.net/gh/1715173329/IPCIDR-CHINA@master/ipv4.txt"
-IPV6_URL="https://testingcf.jsdelivr.net/gh/1715173329/IPCIDR-CHINA@master/ipv6.txt"
+URL="https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/cn.list"
 
-# 定义临时文件路径
-IPV4_TMP_FILE="/tmp/ipv4.txt"
-IPV6_TMP_FILE="/tmp/ipv6.txt"
+# 使用 mktemp 创建临时文件
+TMP_FILE=$(mktemp)
 
-# 下载 IPv4 和 IPv6 CIDR 列表
-wget -q -O $IPV4_TMP_FILE $IPV4_URL
-wget -q -O $IPV6_TMP_FILE $IPV6_URL
-
-# 检查文件是否下载成功
-if [[ ! -f $IPV4_TMP_FILE || ! -f $IPV6_TMP_FILE ]]; then
+# 使用 curl 下载文件，并检查下载是否成功
+if ! curl -s -o "$TMP_FILE" "$URL"; then
     echo "下载 IP 列表失败"
+    rm -f "$TMP_FILE"
     exit 1
 fi
 
-# 读取 IPv4 CIDR 列表并拼接成一个字符串
-china_ipv4=$(awk '{printf (NR>1?",":"") $0}' $IPV4_TMP_FILE)
+# 读取 $TMP_FILE 并分离 IPv4 和 IPv6 地址段
+china_ipv4=$(awk '/\./ {print $0}' "$TMP_FILE" | tr '\n' ',' | sed 's/,$//')
+china_ipv6=$(awk '/:/ {print $0}' "$TMP_FILE" | tr '\n' ',' | sed 's/,$//')
 
-# 读取 IPv6 CIDR 列表并拼接成一个字符串
-china_ipv6=$(awk '{printf (NR>1?",":"") $0}' $IPV6_TMP_FILE)
+# 删除临时文件
+rm -f "$TMP_FILE"
 
 # 清空
 nft flush set inet singbox mainland_addr_v4
