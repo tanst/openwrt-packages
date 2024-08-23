@@ -54,7 +54,7 @@ define Package/sing-box
     +firewall4 \
     +kmod-nft-tproxy \
     +(SING_BOX_BUILD_GVISOR||SING_BOX_BUILD_LWIP):kmod-tun
-  USERID:=sing-box=0:sing-box=5336  
+  USERID:=sing-box=0:sing-box=5336
 endef
 
 define Package/sing-box/description
