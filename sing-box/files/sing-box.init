@@ -17,8 +17,7 @@ USER="sing-box"
 
 start_service() {
     mkdir -p "$RUN_DIR"
-    GROUP="$(id -ng $USER)"
-	chown $USER:$GROUP $RUN_DIR
+    sed -i 's/5336:5336/0:5336/' "/etc/passwd"
 
     ip rule add fwmark 0x1ed4 table 100
     ip route add local default dev lo table 100
