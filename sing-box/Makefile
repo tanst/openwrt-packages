@@ -62,12 +62,12 @@ define Package/sing-box/description
   ShadowTLS, Tor, trojan, VLess, VMess, WireGuard and so on.
 endef
 
+define Package/sing-box/conffiles
+/etc/sing-box/
+endef
+
 define Package/sing-box/config
   if PACKAGE_sing-box
-    config SING_BOX_ENABLE_BY_DEFAULT
-    bool "Enable sing-box by default"
-    default y
-
     config SING_BOX_BUILD_ACME
     bool "Build with ACME TLS certificate issuer support"
 
@@ -143,12 +143,10 @@ define Package/sing-box/install
 	$(INSTALL_DIR) $(1)/etc/sing-box/scripts
 	$(INSTALL_BIN) ./root/etc/sing-box/scripts/update_china_ip.sh $(1)/etc/sing-box/scripts
 
-
 	$(INSTALL_DIR) $(1)/etc/config/
 	$(INSTALL_CONF) ./files/tproxy.nft $(1)/etc/sing-box
 	$(INSTALL_DIR) $(1)/etc/init.d/
 	$(INSTALL_BIN) ./files/sing-box.init $(1)/etc/init.d/sing-box
-	$(if $(CONFIG_SING_BOX_ENABLE_BY_DEFAULT),$(INSTALL_DIR) $(1)/etc/rc.d && $(LN) ../init.d/sing-box $(1)/etc/rc.d/S99sing-box)
 endef
 
 $(eval $(call GoBinPackage,sing-box))
