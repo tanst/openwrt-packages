@@ -131,7 +131,6 @@ GO_PKG_TAGS:=$(subst $(space),$(comma),$(strip \
 ))
 
 define Package/sing-box/conffiles
-/etc/config/sing-box
 /etc/sing-box/
 endef
 
@@ -140,6 +139,8 @@ define Package/sing-box/install
 
 	$(INSTALL_DIR) $(1)/etc/sing-box
 	$(INSTALL_CONF) $(PKG_BUILD_DIR)/release/config/config.json $(1)/etc/sing-box
+
+	$(INSTALL_DIR) $(1)/etc/sing-box
 	$(INSTALL_CONF) ./files/tproxy.nft $(1)/etc/sing-box
 
 	$(INSTALL_DIR) $(1)/etc/sing-box/scripts
