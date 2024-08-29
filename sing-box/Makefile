@@ -62,10 +62,6 @@ define Package/sing-box/description
   ShadowTLS, Tor, trojan, VLess, VMess, WireGuard and so on.
 endef
 
-define Package/sing-box/conffiles
-/etc/sing-box/
-endef
-
 define Package/sing-box/config
   if PACKAGE_sing-box
     config SING_BOX_BUILD_ACME
@@ -134,17 +130,21 @@ GO_PKG_TAGS:=$(subst $(space),$(comma),$(strip \
 	$(if $(CONFIG_SING_BOX_BUILD_WIREGUARD),with_wireguard) \
 ))
 
+define Package/sing-box/conffiles
+/etc/config/sing-box
+/etc/sing-box/
+endef
+
 define Package/sing-box/install
 	$(call GoPackage/Package/Install/Bin,$(1))
 
 	$(INSTALL_DIR) $(1)/etc/sing-box
 	$(INSTALL_CONF) $(PKG_BUILD_DIR)/release/config/config.json $(1)/etc/sing-box
+	$(INSTALL_CONF) ./files/tproxy.nft $(1)/etc/sing-box
 
 	$(INSTALL_DIR) $(1)/etc/sing-box/scripts
 	$(INSTALL_BIN) ./root/etc/sing-box/scripts/update_china_ip.sh $(1)/etc/sing-box/scripts
 
-	$(INSTALL_DIR) $(1)/etc/config/
-	$(INSTALL_CONF) ./files/tproxy.nft $(1)/etc/sing-box
 	$(INSTALL_DIR) $(1)/etc/init.d/
 	$(INSTALL_BIN) ./files/sing-box.init $(1)/etc/init.d/sing-box
 endef
