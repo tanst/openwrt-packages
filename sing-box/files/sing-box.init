@@ -19,12 +19,6 @@ start_service() {
     mkdir -p "$RUN_DIR"
     sed -i 's/5336:5336/0:5336/' "/etc/passwd"
 
-    ip rule add fwmark 0x1ed4 table 100
-    ip route add local default dev lo table 100
-    ip -6 rule add fwmark 0x1ed4 table 100
-    ip -6 route add local default dev lo table 100
-    nft -f /etc/sing-box/tproxy.nft
-
     procd_open_instance
     procd_set_param command $PROG run -D $RUN_DIR -c $CONF
 
@@ -34,6 +28,12 @@ start_service() {
     procd_set_param stderr 1
     procd_set_param respawn "${respawn_threshold:-3600}" "${respawn_timeout:-5}" "${respawn_retry:-5}"
     procd_close_instance
+
+    ip rule add fwmark 0x1ed4 table 100
+    ip route add local default dev lo table 100
+    ip -6 rule add fwmark 0x1ed4 table 100
+    ip -6 route add local default dev lo table 100
+    nft -f /etc/sing-box/tproxy.nft
 
     # DNSMasq
     mkdir -p "$DNSMASQ_DIR"
@@ -58,7 +58,6 @@ start_service() {
 stop_service() {
     sed -i "/$RES_DIR/d" "/etc/crontabs/root" 2>"/dev/null"
     /etc/init.d/cron restart >"/dev/null" 2>&1
-    service_stop $PROG
     ip rule del fwmark 0x1ed4 table 100 2>/dev/null
     ip route del local default dev lo table 100 2>/dev/null
     ip -6 rule del fwmark 0x1ed4 table 100 2>/dev/null
@@ -69,6 +68,8 @@ stop_service() {
     # Remove DNS hijack
 	rm -rf "$DNSMASQ_DIR/../dnsmasq-singbox.conf" "$DNSMASQ_DIR"
 	/etc/init.d/dnsmasq restart >"/dev/null" 2>&1
+
+    service_stop $PROG
 
     echo "sing-box is stopped!"
 }
