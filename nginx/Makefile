@@ -8,11 +8,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
-PKG_VERSION:=1.27.0
+PKG_VERSION:=1.27.1
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/nginx/nginx/tar.gz/release-$(PKG_VERSION)?
+PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://nginx.org/download/
 PKG_HASH:=skip
 
 PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de> \
