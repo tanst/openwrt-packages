@@ -9,9 +9,9 @@ USE_PROCD=1
 #####  ONLY CHANGE THIS BLOCK  ######
 PROG="/usr/bin/sing-box"
 RUN_DIR="/var/run/sing-box"
-RES_DIR="/etc/sing-box" # resource dir / working dir / the dir where you store ip/domain lists
-CONF="/etc/sing-box/config.json"   # where is the config file, it can be a relative path to $RES_DIR
-DNSMASQ_DIR="/tmp/dnsmasq.d/dnsmasq-singbox.d"
+RES_DIR="/etc/sing-box"          # resource dir / working dir / the dir where you store ip/domain lists
+CONF="/etc/sing-box/config.json" # where is the config file, it can be a relative path to $RES_DIR
+DNSMASQ_DIR="/tmp/dnsmasq.cfg01411c.d/dnsmasq-singbox.d"
 USER="sing-box"
 #####  ONLY CHANGE THIS BLOCK  ######
 
@@ -37,8 +37,8 @@ start_service() {
 
     # DNSMasq
     mkdir -p "$DNSMASQ_DIR"
-    echo -e "conf-dir=$DNSMASQ_DIR" > "$DNSMASQ_DIR/../dnsmasq-singbox.conf"
-    cat <<-EOF >> "$DNSMASQ_DIR/redirect-dns.conf"
+    echo -e "conf-dir=$DNSMASQ_DIR" >"$DNSMASQ_DIR/../dnsmasq-singbox.conf"
+    cat <<-EOF >>"$DNSMASQ_DIR/redirect-dns.conf"
 				no-poll
 				no-resolv
 				server=127.0.0.1#5333
@@ -46,7 +46,7 @@ start_service() {
     /etc/init.d/dnsmasq restart >"/dev/null" 2>&1
 
     if ! crontab -l | grep -q "$RES_DIR/scripts/update_china_ip.sh"; then
-        echo -e "0 5 * * * $RES_DIR/scripts/update_china_ip.sh" >> "/etc/crontabs/root"
+        echo -e "0 5 * * * $RES_DIR/scripts/update_china_ip.sh" >>"/etc/crontabs/root"
         /etc/init.d/cron restart
     else
         echo "Cron job already exists, skipping addition."
@@ -66,8 +66,8 @@ stop_service() {
     nft delete table inet singbox 2>/dev/null
 
     # Remove DNS hijack
-	rm -rf "$DNSMASQ_DIR/../dnsmasq-singbox.conf" "$DNSMASQ_DIR"
-	/etc/init.d/dnsmasq restart >"/dev/null" 2>&1
+    rm -rf "$DNSMASQ_DIR/../dnsmasq-singbox.conf" "$DNSMASQ_DIR"
+    /etc/init.d/dnsmasq restart >"/dev/null" 2>&1
 
     service_stop $PROG
 
