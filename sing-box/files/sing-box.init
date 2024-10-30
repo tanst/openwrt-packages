@@ -11,8 +11,14 @@ PROG="/usr/bin/sing-box"
 RUN_DIR="/var/run/sing-box"
 RES_DIR="/etc/sing-box"          # resource dir / working dir / the dir where you store ip/domain lists
 CONF="/etc/sing-box/config.json" # where is the config file, it can be a relative path to $RES_DIR
-DNSMASQ_DIR="/tmp/dnsmasq.cfg01411c.d/dnsmasq-singbox.d"
 USER="sing-box"
+# we don't know which is the default server, just take the first one
+DNSMASQ_UCI_CONFIG="$(uci -q show "dhcp.@dnsmasq[0]" | awk 'NR==1 {split($0, conf, /[.=]/); print conf[2]}')"
+if [ -f "/tmp/etc/dnsmasq.conf.$DNSMASQ_UCI_CONFIG" ]; then
+	DNSMASQ_DIR="$(awk -F '=' '/^conf-dir=/ {print $2}' "/tmp/etc/dnsmasq.conf.$DNSMASQ_UCI_CONFIG")/dnsmasq-singbox.d"
+else
+	DNSMASQ_DIR="/tmp/dnsmasq.d/dnsmasq-singbox.d"
+fi
 #####  ONLY CHANGE THIS BLOCK  ######
 
 start_service() {
