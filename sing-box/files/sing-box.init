@@ -15,9 +15,9 @@ USER="sing-box"
 # we don't know which is the default server, just take the first one
 DNSMASQ_UCI_CONFIG="$(uci -q show "dhcp.@dnsmasq[0]" | awk 'NR==1 {split($0, conf, /[.=]/); print conf[2]}')"
 if [ -f "/tmp/etc/dnsmasq.conf.$DNSMASQ_UCI_CONFIG" ]; then
-	DNSMASQ_DIR="$(awk -F '=' '/^conf-dir=/ {print $2}' "/tmp/etc/dnsmasq.conf.$DNSMASQ_UCI_CONFIG")/dnsmasq-singbox.d"
+    DNSMASQ_DIR="$(awk -F '=' '/^conf-dir=/ {print $2}' "/tmp/etc/dnsmasq.conf.$DNSMASQ_UCI_CONFIG")/dnsmasq-singbox.d"
 else
-	DNSMASQ_DIR="/tmp/dnsmasq.d/dnsmasq-singbox.d"
+    DNSMASQ_DIR="/tmp/dnsmasq.d/dnsmasq-singbox.d"
 fi
 #####  ONLY CHANGE THIS BLOCK  ######
 
@@ -25,6 +25,7 @@ start_service() {
     mkdir -p "$RUN_DIR"
     sed -i 's/5336:5336/0:5336/' "/etc/passwd"
 
+    echo "Starting default sing-box with config: $CONF"
     procd_open_instance
     procd_set_param command $PROG run -D $RUN_DIR -c $CONF
 
@@ -34,6 +35,26 @@ start_service() {
     procd_set_param stderr 1
     procd_set_param respawn "${respawn_threshold:-3600}" "${respawn_timeout:-5}" "${respawn_retry:-5}"
     procd_close_instance
+
+    # Iterate over all JSON files in /etc/sing-box/ except config.json
+    for cfg in $RES_DIR/*.json; do
+        if [ "$cfg" != "$CONF" ]; then
+            # Create a unique run directory for each instance
+            CONFIG_NAME=$(basename "$cfg" .json)
+            INSTANCE_RUN_DIR="/var/run/sing-box/$CONFIG_NAME"
+            mkdir -p "$INSTANCE_RUN_DIR"
+
+            echo "Starting sing-box with config: $cfg in $INSTANCE_RUN_DIR"
+            procd_open_instance
+            procd_set_param command $PROG run -D "$INSTANCE_RUN_DIR" -c "$cfg"
+            procd_set_param user $USER
+            procd_set_param file "$cfg"
+            procd_set_param stdout 1
+            procd_set_param stderr 1
+            procd_set_param respawn "${respawn_threshold:-3600}" "${respawn_timeout:-5}" "${respawn_retry:-5}"
+            procd_close_instance
+        fi
+    done
 
     ip rule add fwmark 0x1ed4 table 100
     ip route add local default dev lo table 100
