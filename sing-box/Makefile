@@ -5,7 +5,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sing-box
-PKG_VERSION:=1.10.1
+PKG_VERSION:=1.11.11
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
@@ -53,7 +53,8 @@ define Package/sing-box
     +kmod-netlink-diag \
     +firewall4 \
     +kmod-nft-tproxy \
-    +(SING_BOX_BUILD_GVISOR||SING_BOX_BUILD_LWIP):kmod-tun
+    +(SING_BOX_BUILD_GVISOR||SING_BOX_BUILD_LWIP):kmod-tun \
+    +dnsproxy
   USERID:=sing-box=5336:sing-box=5336
 endef
 
