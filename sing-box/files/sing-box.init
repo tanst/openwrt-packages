@@ -25,6 +25,16 @@ start_service() {
     mkdir -p "$RUN_DIR"
     sed -i 's/5336:5336/0:5336/' "/etc/passwd"
 
+    # 启动 dnsproxy，实例名为 dnsproxy
+    echo "Starting dnsproxy on 127.0.0.1:5334"
+    procd_open_instance "dnsproxy"
+    procd_set_param command /usr/bin/dnsproxy --listen 127.0.0.1 --port 5334 --upstream 127.0.0.1:5333 --cache --cache-size 4096
+    procd_set_param user root
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_set_param respawn "${respawn_threshold:-3600}" "${respawn_timeout:-5}" "${respawn_retry:-5}"
+    procd_close_instance
+
     echo "Starting default sing-box with config: $CONF"
     procd_open_instance
     procd_set_param command $PROG run -D $RUN_DIR -c $CONF
@@ -68,7 +78,9 @@ start_service() {
     cat <<-EOF >>"$DNSMASQ_DIR/redirect-dns.conf"
 				no-poll
 				no-resolv
-				server=127.0.0.1#5333
+				server=/ty.uy/223.5.5.5
+				server=/028028.xyz/223.5.5.5
+				server=127.0.0.1#5334
 			EOF
     /etc/init.d/dnsmasq restart >"/dev/null" 2>&1
 
@@ -95,6 +107,8 @@ stop_service() {
     # Remove DNS hijack
     rm -rf "$DNSMASQ_DIR/../dnsmasq-singbox.conf" "$DNSMASQ_DIR"
     /etc/init.d/dnsmasq restart >"/dev/null" 2>&1
+
+    service_stop dnsproxy 2>/dev/null
 
     service_stop $PROG
 
