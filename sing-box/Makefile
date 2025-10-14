@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sing-box
-PKG_VERSION:=1.11.11
+PKG_VERSION:=1.12.9
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/SagerNet/sing-box/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=skip
+PKG_HASH:=7db58b28e93d1f7dde0565fd2a2d82979d18a82df48623a0a99455278cd5c372
 
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=LICENSE
@@ -120,7 +120,6 @@ GO_PKG_TAGS:=$(subst $(space),$(comma),$(strip \
 	$(if $(CONFIG_SING_BOX_BUILD_ACME),with_acme) \
 	$(if $(CONFIG_SING_BOX_BUILD_CLASH_API),with_clash_api) \
 	$(if $(CONFIG_SING_BOX_BUILD_DHCP),with_dhcp) \
-	$(if $(CONFIG_SING_BOX_BUILD_ECH),with_ech) \
 	$(if $(CONFIG_SING_BOX_BUILD_EMBEDDED_TOR),with_embedded_tor) \
 	$(if $(CONFIG_SING_BOX_BUILD_GRPC),with_grpc) \
 	$(if $(CONFIG_SING_BOX_BUILD_GVISOR),with_gvisor) \
