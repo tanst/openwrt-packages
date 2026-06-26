@@ -6,6 +6,10 @@ BIN_NAME="sing-box"
 INSTALL_PATH="/usr/bin/${BIN_NAME}"
 TMP_DIR="/tmp/singbox_update"
 
+# GitHub 下载代理（可自定义，留空则直连）
+# GH_PROXY="https://gh.ty.uy/"
+GH_PROXY=""
+
 # 获取系统架构
 ARCH=$(uname -m)
 case "$ARCH" in
@@ -28,6 +32,17 @@ case "$ARCH" in
 esac
 echo "🔍 检测到系统架构：$ARCH"
 
+# 检测 libc 类型（glibc 或 musl）
+detect_libc() {
+    if ldd /bin/ls 2>/dev/null | grep -q musl; then
+        echo "musl"
+    else
+        echo "glibc"
+    fi
+}
+LIBC_TYPE=$(detect_libc)
+echo "🔍 检测到 libc 类型：$LIBC_TYPE"
+
 # 获取当前已安装版本
 if [ -x "$INSTALL_PATH" ]; then
     CURRENT_VERSION=$("$INSTALL_PATH" version 2>/dev/null | grep "^sing-box version" | awk '{print $3}')
@@ -40,21 +55,53 @@ if [ -z "$CURRENT_VERSION" ]; then
 fi
 
 # 获取 GitHub 最新版本 JSON 和下载地址
-LATEST_JSON=$(wget -qO- "https://api.github.com/repos/${REPO}/releases/latest")
+API_URL="https://api.github.com/repos/${REPO}/releases/latest"
+API_URL="${GH_PROXY}${API_URL}"
+LATEST_JSON=$(curl -sL "$API_URL")
 
-ASSET_URL=$(echo "$LATEST_JSON" | tr ',' '\n' | grep "browser_download_url" | grep "${ARCH}.tar.gz" | cut -d '"' -f 4)
+# 尝试根据 libc 类型获取合适的版本
+# 优先级：1. musl版本（如果是musl系统）2. glibc版本（如果是glibc系统）3. 通用版本
+get_asset_url() {
+    local arch=$1
+    local libc=$2
+    
+    if [ "$libc" = "musl" ]; then
+        # 先尝试 musl 版本
+        echo "$LATEST_JSON" | tr ',' '\n' | grep "browser_download_url" | grep "${arch}-musl.tar.gz" | cut -d '"' -f 4
+    elif [ "$libc" = "glibc" ]; then
+        # 先尝试 glibc 版本
+        echo "$LATEST_JSON" | tr ',' '\n' | grep "browser_download_url" | grep "${arch}-glibc.tar.gz" | cut -d '"' -f 4
+    fi
+}
+
+ASSET_URL=$(get_asset_url "$ARCH" "$LIBC_TYPE")
+
+# 如果找不到对应 libc 的版本，则尝试通用版本
+if [ -z "$ASSET_URL" ]; then
+    echo "⚠️  未找到 ${LIBC_TYPE} 版本，尝试通用版本..."
+    ASSET_URL=$(echo "$LATEST_JSON" | tr ',' '\n' | grep "browser_download_url" | grep "${ARCH}.tar.gz" | grep -v glibc | grep -v musl | cut -d '"' -f 4 | head -n 1)
+fi
+
+# 最后的备选方案：如果还是找不到，就尝试任何匹配架构的版本
+if [ -z "$ASSET_URL" ]; then
+    echo "⚠️  未找到通用版本，尝试备选方案..."
+    ASSET_URL=$(echo "$LATEST_JSON" | tr ',' '\n' | grep "browser_download_url" | grep "${ARCH}.tar.gz" | cut -d '"' -f 4 | head -n 1)
+fi
 
 if [ -z "$ASSET_URL" ]; then
     echo "❌ 未找到对应架构 (${ARCH}) 的可执行包。"
     exit 1
 fi
-
+ASSET_URL="${GH_PROXY}${ASSET_URL}"
 # 从下载地址中提取版本号
 LATEST_VERSION=$(echo "$ASSET_URL" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n1 | sed 's/^v//')
 
+# 获取下载的文件名并显示版本信息
+DOWNLOAD_FILE=$(echo "$ASSET_URL" | grep -oE '[^/]+\.tar\.gz$')
 echo "📌 当前版本：$CURRENT_VERSION"
 echo "📦 最新版本：$LATEST_VERSION"
-echo "✅ 找到最新版本下载地址：$ASSET_URL"
+echo "📥 下载文件：$DOWNLOAD_FILE"
+echo "✅ 找到最新版本下载地址"
 
 # 如果版本一致则跳过更新
 if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ]; then
@@ -67,13 +114,13 @@ mkdir -p "$TMP_DIR"
 cd "$TMP_DIR" || exit 1
 
 # 下载压缩包
-wget -q "$ASSET_URL" -O "${ARCH}.tar.gz" || {
+curl -sL -o "${DOWNLOAD_FILE}" "$ASSET_URL" || {
     echo "❌ 下载失败。"
     exit 1
 }
 
 # 解压文件
-tar -xzf "${ARCH}.tar.gz" || {
+tar -xzf "${DOWNLOAD_FILE}" || {
     echo "❌ 解压失败。"
     exit 1
 }
