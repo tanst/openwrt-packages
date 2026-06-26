@@ -12889,7 +12889,7 @@ table inet singbox {
 		auto-merge
 		elements = { 1.0.0.1, 1.1.1.1-1.1.1.2,
 			     8.8.4.4, 8.8.8.8,
-			     9.9.9.9,
+			     9.9.9.9, 192.168.2.0/24,192.168.99.0/24,
 			     67.198.55.0/24, 91.108.4.0/22,
 			     91.108.56.0/24, 104.16.248.249,
 			     104.16.249.249, 109.239.140.0/24,
@@ -12900,6 +12900,8 @@ table inet singbox {
 	chain prerouting {
 		type filter hook prerouting priority mangle; policy accept;
 
+		# 跳过发往本机地址的流量
+		fib daddr type local return
 		# 跳过 sing-box 路由标记流量 
 		meta mark 0x00001ed6 return
 		# 通过匹配用户来避免环路
