@@ -8,20 +8,6 @@
 menu "Configuration"
         depends on PACKAGE_nginx-ssl
 
-config NGINX_DAV
-	bool
-	prompt "Enable WebDAV module"
-	help
-		Enable the HTTP and WebDAV methods PUT, DELETE, MKCOL, COPY and MOVE.
-	default n
-
-config NGINX_FLV
-	bool
-	prompt "Enable FLV module"
-	help
-		Provides the ability to seek within FLV (Flash) files using time-based offsets.
-	default n
-
 config NGINX_STUB_STATUS
 	bool
 	prompt "Enable stub status module"
@@ -44,16 +30,6 @@ config NGINX_HTTP_GZIP_STATIC
 	prompt "Enable HTTP gzip static module"
 	default y
 
-config NGINX_HTTP_SSI
-	bool
-	prompt "Enable HTTP ssi module"
-	default y
-
-config NGINX_HTTP_USERID
-	bool
-	prompt "Enable HTTP userid module"
-	default y
-
 config NGINX_HTTP_ACCESS
 	bool
 	prompt "Enable HTTP access module"
@@ -69,29 +45,9 @@ config NGINX_HTTP_AUTH_REQUEST
 	prompt "Enable HTTP auth request module"
 	default n
 
-config NGINX_HTTP_AUTOINDEX
-	bool
-	prompt "Enable HTTP autoindex module"
-	default y
-
-config NGINX_HTTP_GEO
-	bool
-	prompt "Enable HTTP geo module"
-	default y
-
 config NGINX_HTTP_MAP
 	bool
 	prompt "Enable HTTP map module"
-	default y
-
-config NGINX_HTTP_SPLIT_CLIENTS
-	bool
-	prompt "Enable HTTP split clients"
-	default y
-
-config NGINX_HTTP_REFERER
-	bool
-	prompt "Enable HTTP referer module"
 	default y
 
 config NGINX_HTTP_REWRITE
@@ -105,26 +61,6 @@ config NGINX_HTTP_PROXY
 	prompt "Enable HTTP proxy module"
 	default y
 
-config NGINX_HTTP_FASTCGI
-	bool
-	prompt "Enable HTTP fastcgi module"
-	default y
-
-config NGINX_HTTP_UWSGI
-	bool
-	prompt "Enable HTTP uwsgi module"
-	default y
-
-config NGINX_HTTP_SCGI
-	bool
-	prompt "Enable HTTP scgi module"
-	default y
-
-config NGINX_HTTP_MEMCACHED
-	bool
-	prompt "Enable HTTP memcached module"
-	default y
-
 config NGINX_HTTP_LIMIT_CONN
 	bool
 	prompt "Enable HTTP limit conn"
@@ -133,16 +69,6 @@ config NGINX_HTTP_LIMIT_CONN
 config NGINX_HTTP_LIMIT_REQ
 	bool
 	prompt "Enable HTTP limit req"
-	default y
-
-config NGINX_HTTP_EMPTY_GIF
-	bool
-	prompt "Enable HTTP empty gif"
-	default y
-
-config NGINX_HTTP_BROWSER
-	bool
-	prompt "Enable HTTP browser module"
 	default y
 
 config NGINX_HTTP_UPSTREAM_HASH
