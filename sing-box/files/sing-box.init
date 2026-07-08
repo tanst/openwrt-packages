@@ -20,210 +20,161 @@ else
     DNSMASQ_DIR="/tmp/dnsmasq.d/dnsmasq-singbox.d"
 fi
 
-# 日志函数
 log_info() {
-	logger -t "sing-box" -p daemon.info "$1"
-	echo "[INFO] $1"
+    logger -t "sing-box" -p daemon.info "$1"
+    echo "[INFO] $1"
 }
 
 log_error() {
-	logger -t "sing-box" -p daemon.err "$1"
-	echo "[ERROR] $1" >&2
+    logger -t "sing-box" -p daemon.err "$1"
+    echo "[ERROR] $1" >&2
 }
 
-# 检查配置文件是否有效
 validate_config() {
-	local config_file="$1"
-	[ -f "$config_file" ] || {
-		log_error "Config file not found: $config_file"
-		return 1
-	}
+    local config_file="$1"
+    [ -f "$config_file" ] || {
+        log_error "Config file not found: $config_file"
+        return 1
+    }
 
-	if ! $PROG check -c "$config_file" >/dev/null 2>&1; then
-		log_error "Config validation failed: $config_file"
-		return 1
-	fi
+    if ! $PROG check -c "$config_file" >/dev/null 2>&1; then
+        log_error "Config validation failed: $config_file"
+        return 1
+    fi
 
-	log_info "Config validation passed: $config_file"
-	return 0
+    log_info "Config validation passed: $config_file"
+    return 0
 }
 
-# 设置防火墙规则
 setup_firewall() {
-	log_info "Setting up firewall rules..."
+    log_info "Setting up firewall rules..."
 
-	ip rule list | grep -q "fwmark 0x1ed4" || ip rule add fwmark 0x1ed4 table 100
-	ip route show table 100 | grep -q "local default" || ip route add local default dev lo table 100
-	ip -6 rule list | grep -q "fwmark 0x1ed4" || ip -6 rule add fwmark 0x1ed4 table 100
-	ip -6 route show table 100 | grep -q "local default" || ip -6 route add local default dev lo table 100
+    ip rule list | grep -q "fwmark 0x1ed4" || ip rule add fwmark 0x1ed4 table 100
+    ip route show table 100 | grep -q "local default" || ip route add local default dev lo table 100
+    ip -6 rule list | grep -q "fwmark 0x1ed4" || ip -6 rule add fwmark 0x1ed4 table 100
+    ip -6 route show table 100 | grep -q "local default" || ip -6 route add local default dev lo table 100
 
-	if [ -f "/etc/sing-box/tproxy.nft" ]; then
-		nft -f /etc/sing-box/tproxy.nft || log_error "Failed to load nftables rules"
-	else
-		log_error "nftables rule file not found: /etc/sing-box/tproxy.nft"
-	fi
+    if [ -f "/etc/sing-box/tproxy.nft" ]; then
+        nft -f /etc/sing-box/tproxy.nft || log_error "Failed to load nftables rules"
+    else
+        log_error "nftables rule file not found: /etc/sing-box/tproxy.nft"
+    fi
 }
 
-# 清理防火墙规则
 cleanup_firewall() {
-	log_info "Cleaning up firewall rules..."
-	ip rule del fwmark 0x1ed4 table 100 2>/dev/null
-	ip route del local default dev lo table 100 2>/dev/null
-	ip -6 rule del fwmark 0x1ed4 table 100 2>/dev/null
-	ip -6 route del local default dev lo table 100 2>/dev/null
-	nft flush table inet singbox 2>/dev/null
-	nft delete table inet singbox 2>/dev/null
+    log_info "Cleaning up firewall rules..."
+    ip rule del fwmark 0x1ed4 table 100 2>/dev/null
+    ip route del local default dev lo table 100 2>/dev/null
+    ip -6 rule del fwmark 0x1ed4 table 100 2>/dev/null
+    ip -6 route del local default dev lo table 100 2>/dev/null
+    nft flush table inet singbox 2>/dev/null
+    nft delete table inet singbox 2>/dev/null
 }
 
-# 设置 DNS 劫持
 setup_dns() {
-	log_info "Setting up DNS hijack..."
+    log_info "Setting up DNS hijack..."
 
-	mkdir -p "$DNSMASQ_DIR" || {
-		log_error "Failed to create dnsmasq directory: $DNSMASQ_DIR"
-		return 1
-	}
+    mkdir -p "$DNSMASQ_DIR" || {
+        log_error "Failed to create dnsmasq directory: $DNSMASQ_DIR"
+        return 1
+    }
 
-	echo "conf-dir=$DNSMASQ_DIR" >"$DNSMASQ_DIR/../dnsmasq-singbox.conf"
-
-	cat >"$DNSMASQ_DIR/redirect-dns.conf" <<-EOF
-		        no-poll
-		        no-resolv
-		        server=127.0.0.1#5333
+    echo "conf-dir=$DNSMASQ_DIR" >"$DNSMASQ_DIR/../dnsmasq-singbox.conf"
+    
+    cat >"$DNSMASQ_DIR/redirect-dns.conf" <<-EOF
+		no-poll
+		no-resolv
+		server=127.0.0.1#5333
 	EOF
 
-	/etc/init.d/dnsmasq restart >/dev/null 2>&1 &&
-		log_info "DNSMasq restarted successfully" ||
-		log_error "Failed to restart DNSMasq"
+    /etc/init.d/dnsmasq restart >/dev/null 2>&1 &&
+        log_info "DNSMasq restarted successfully" ||
+        log_error "Failed to restart DNSMasq"
 }
 
 cleanup_dns() {
-	log_info "Cleaning up DNS settings..."
-	rm -rf "$DNSMASQ_DIR/../dnsmasq-singbox.conf" "$DNSMASQ_DIR"
-	/etc/init.d/dnsmasq restart >/dev/null 2>&1
+    log_info "Cleaning up DNS settings..."
+    rm -rf "$DNSMASQ_DIR/../dnsmasq-singbox.conf" "$DNSMASQ_DIR"
+    /etc/init.d/dnsmasq restart >/dev/null 2>&1
 }
 
-# 设置定时任务
 setup_cron() {
-	local cron_script="$RES_DIR/scripts/update_china_ip.sh"
-	[ -f "$cron_script" ] || {
-		log_error "Cron script not found: $cron_script"
-		return 1
-	}
+    local cron_script="$RES_DIR/scripts/update_china_ip.sh"
+    [ -f "$cron_script" ] || {
+        log_error "Cron script not found: $cron_script"
+        return 1
+    }
 
-	if ! crontab -l 2>/dev/null | grep -q "$cron_script"; then
-		log_info "Adding cron job for China IP update"
-		(
-			crontab -l 2>/dev/null
-			echo "0 5 * * * $cron_script"
-		) | crontab -
-		/etc/init.d/cron restart >/dev/null 2>&1
-	fi
+    if ! crontab -l 2>/dev/null | grep -q "$cron_script"; then
+        log_info "Adding cron job for China IP update"
+        (
+            crontab -l 2>/dev/null
+            echo "0 5 * * * $cron_script"
+        ) | crontab -
+        /etc/init.d/cron restart >/dev/null 2>&1
+    fi
 }
 
 cleanup_cron() {
-	log_info "Cleaning up cron jobs..."
-	crontab -l 2>/dev/null | grep -v "$RES_DIR" | crontab - 2>/dev/null
-	/etc/init.d/cron restart >/dev/null 2>&1
+    log_info "Cleaning up cron jobs..."
+    crontab -l 2>/dev/null | grep -v "$RES_DIR" | crontab - 2>/dev/null
+    /etc/init.d/cron restart >/dev/null 2>&1
 }
 
 start_service() {
-	validate_config "$CONF" || return 1
+    validate_config "$CONF" || return 1
 
-	if pgrep -f "$PROG.*$CONF" >/dev/null 2>&1; then
-		log_info "sing-box already running"
-		exit 0
-	fi
+    # 修复点 1: 这里千万不能用 exit 0，否则会直接中断整个 procd 的初始化链，改为 return 0
+    if pgrep -f "$PROG.*$CONF" >/dev/null 2>&1; then
+        log_info "sing-box already running"
+        return 0
+    fi
 
-	mkdir -p "$RUN_DIR" || {
-		log_error "Failed to create run directory: $RUN_DIR"
-		return 1
-	}
+    mkdir -p "$RUN_DIR" || {
+        log_error "Failed to create run directory: $RUN_DIR"
+        return 1
+    }
 
-	if grep -q "5336:5336" /etc/passwd; then
-		sed -i 's/5336:5336/0:5336/' /etc/passwd
-		log_info "Fixed user permissions"
-	fi
+    if grep -q "5336:5336" /etc/passwd; then
+        sed -i 's/5336:5336/0:5336/' /etc/passwd
+        log_info "Fixed user permissions"
+    fi
 
-	log_info "Starting sing-box with config: $CONF"
-	procd_open_instance
-	procd_set_param command $PROG run -D "$RUN_DIR" -c "$CONF"
-	procd_set_param user $USER
-	procd_set_param file "$CONF"
-	procd_set_param stdout 1
-	procd_set_param stderr 1
-	procd_set_param respawn "${respawn_threshold:-3600}" "${respawn_timeout:-5}" "${respawn_retry:-5}"
-	procd_close_instance
+    log_info "Starting sing-box with config: $CONF"
+    
+    procd_open_instance
+    procd_set_param command $PROG run -D "$RUN_DIR" -c "$CONF"
+    procd_set_param user $USER
+    procd_set_param file "$CONF"
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_set_param respawn "${respawn_threshold:-3600}" "${respawn_timeout:-5}" "${respawn_retry:-5}"
+    procd_close_instance
 
-	# 启动额外的配置实例
-	local instance_count=0
-	for cfg in "$RES_DIR"/*.json; do
-		if [ -f "$cfg" ] && [ "$cfg" != "$CONF" ]; then
-			if ! validate_config "$cfg"; then
-				log_error "Skipping invalid config: $cfg"
-				continue
-			fi
+    setup_firewall
+    setup_dns
+    setup_cron
 
-			local config_name=$(basename "$cfg" .json)
-			local instance_run_dir="/var/run/sing-box/$config_name"
-
-			mkdir -p "$instance_run_dir" || {
-				log_error "Failed to create instance directory: $instance_run_dir"
-				continue
-			}
-
-			log_info "Starting sing-box instance: $config_name"
-			procd_open_instance "$config_name"
-			procd_set_param command $PROG run -D "$instance_run_dir" -c "$cfg"
-			procd_set_param user $USER
-			procd_set_param file "$cfg"
-			procd_set_param stdout 1
-			procd_set_param stderr 1
-			procd_set_param respawn "${respawn_threshold:-3600}" "${respawn_timeout:-5}" "${respawn_retry:-5}"
-			procd_close_instance
-
-			instance_count=$((instance_count + 1))
-		fi
-	done
-
-	if [ $instance_count -gt 0 ]; then
-		log_info "Started $instance_count additional instances"
-	fi
-
-	setup_firewall
-	setup_dns
-	setup_cron
-
-	log_info "sing-box started successfully!"
+    log_info "sing-box started successfully!"
 }
 
 stop_service() {
-	log_info "Stopping sing-box..."
-	cleanup_cron
-	cleanup_firewall
-	cleanup_dns
-	service_stop "$PROG"
-	log_info "sing-box stopped successfully!"
+    log_info "Stopping sing-box..."
+    cleanup_cron
+    cleanup_firewall
+    cleanup_dns
+    # 修复点 2: 删除了 service_stop "$PROG"。在 USE_PROCD=1 环境下，kill 进程是由 procd 负责的。
+    log_info "sing-box stopped successfully!"
 }
 
 reload_service() {
-	log_info "Reloading sing-box..."
-	if pgrep -f "$PROG.*$CONF" >/dev/null 2>&1; then
-		procd_send_signal sing-box
-		log_info "Sent reload signal to sing-box"
-	else
-		log_info "sing-box not running, starting instead..."
-		start_service
-	fi
-}
-
-restart() {
-	log_info "Restarting sing-box..."
-	if pgrep -f "$PROG.*$CONF" >/dev/null 2>&1; then
-		stop_service
-		sleep 2s
-		start_service
-	else
-		start
-	fi
+    log_info "Reloading sing-box..."
+    if pgrep -f "$PROG.*$CONF" >/dev/null 2>&1; then
+        # 修复点 3: 修改为标准的信号发送方式
+        procd_send_signal "$PROG"
+        log_info "Sent reload signal to sing-box"
+    else
+        log_info "sing-box not running, starting instead..."
+        start_service
+    fi
 }
