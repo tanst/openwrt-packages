@@ -17,7 +17,8 @@ else
 	F_ARCH:=armv7
 endif
 
-PKG_SOURCE:=sing-box-linux-$(F_ARCH)
+# 1. 后缀改为 .tar.gz
+PKG_SOURCE:=sing-box-linux-$(F_ARCH).tar.gz
 PKG_SOURCE_URL:=https://github.com/tanst/openwrt-packages/releases/download/v$(PKG_VERSION)/
 PKG_HASH:=skip
 
@@ -31,18 +32,15 @@ define Package/sing-box
 endef
 
 
-define Build/Compile
-	# 自动下载后，文件会放在 $(DL_DIR)/$(PKG_SOURCE)
-	# 我们直接把它拷贝到构建目录
-	$(INSTALL_DIR) $(PKG_BUILD_DIR)
-	cp $(DL_DIR)/$(PKG_SOURCE) $(PKG_BUILD_DIR)/sing-box
-	chmod +x $(PKG_BUILD_DIR)/sing-box
+define Package/sing-box/conffiles
+/etc/sing-box/config.json
 endef
 
 define Package/sing-box/install
 	$(INSTALL_DIR) $(1)/usr/bin
+	# 直接从 PKG_BUILD_DIR 安装解压出来的 sing-box 二进制
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/sing-box $(1)/usr/bin/sing-box
-		
+
 	# 安装配置和脚本
 	$(INSTALL_DIR) $(1)/etc/sing-box
 	$(INSTALL_CONF) ./files/tproxy.nft $(1)/etc/sing-box/tproxy.nft

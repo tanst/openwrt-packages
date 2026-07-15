@@ -49,7 +49,8 @@ jobs:
           cd source
           CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.goarch }} go build -tags with_clash_api,with_grpc,with_gvisor,with_quic,with_utls,with_wireguard -trimpath -ldflags="-s -w" -o sing-box ./cmd/sing-box
           sudo apt-get install -y upx && upx --best sing-box
-          mv sing-box ../sing-box-linux-${{ matrix.arch }}
+          tar -czvf sing-box-linux-${{ matrix.arch }}.tar.gz sing-box
+          mv sing-box-linux-${{ matrix.arch }}.tar.gz ../
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
