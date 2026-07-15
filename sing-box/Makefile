@@ -5,150 +5,68 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sing-box
-PKG_VERSION:=1.12.9
+PKG_VERSION:=1.13.14
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/SagerNet/sing-box/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=7db58b28e93d1f7dde0565fd2a2d82979d18a82df48623a0a99455278cd5c372
+# 自动匹配当前目标架构
+ifeq ($(ARCH),aarch64)
+  F_ARCH:=arm64
+else ifeq ($(ARCH),x86_64)
+  F_ARCH:=amd64
+else
+  F_ARCH:=armv7
+endif
 
-PKG_LICENSE:=GPL-3.0-or-later
-PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=Toy <t@tanst.com>
-
-PKG_CONFIG_DEPENDS:= \
-	CONFIG_SING_BOX_BUILD_ACME \
-	CONFIG_SING_BOX_BUILD_CLASH_API \
-	CONFIG_SING_BOX_BUILD_DHCP \
-	CONFIG_SING_BOX_BUILD_ECH \
-	CONFIG_SING_BOX_BUILD_EMBEDDED_TOR \
-	CONFIG_SING_BOX_BUILD_GRPC \
-	CONFIG_SING_BOX_BUILD_GVISOR \
-	CONFIG_SING_BOX_BUILD_QUIC \
-	CONFIG_SING_BOX_BUILD_REALITY_SERVER \
-	CONFIG_SING_BOX_BUILD_UTLS \
-	CONFIG_SING_BOX_BUILD_V2RAY_API \
-	CONFIG_SING_BOX_BUILD_WIREGUARD
-
-PKG_BUILD_DEPENDS:=golang/host
-PKG_BUILD_PARALLEL:=1
-PKG_BUILD_FLAGS:=no-mips16
-
-GO_PKG:=github.com/sagernet/sing-box
-GO_PKG_BUILD_PKG:=$(GO_PKG)/cmd/sing-box
-GO_PKG_LDFLAGS_X:=$(GO_PKG)/constant.Version=$(PKG_VERSION)
+# 这里填你自己的仓库地址
+PKG_SOURCE:=sing-box-linux-$(F_ARCH)
+PKG_SOURCE_URL:=https://github.com/tanst/openwrt-packages/releases/download/v$(PKG_VERSION)/
 
 include $(INCLUDE_DIR)/package.mk
-include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
 
 define Package/sing-box
   SECTION:=net
   CATEGORY:=Network
-  SUBMENU:=Web Servers/Proxies
-  TITLE:=The universal proxy platform
-  URL:=https://sing-box.sagernet.org/
-  DEPENDS:=$(GO_ARCH_DEPENDS) \
-    +ca-bundle \
-    +kmod-inet-diag \
-    +kmod-netlink-diag \
-    +firewall4 \
-    +kmod-nft-tproxy \
-    +(SING_BOX_BUILD_GVISOR||SING_BOX_BUILD_LWIP):kmod-tun \
-    +dnsproxy
-  USERID:=sing-box=5336:sing-box=5336
+  TITLE:=Sing-box (Static Binary)
+  DEPENDS:=+ca-bundle +kmod-tun +dnsproxy
 endef
 
-define Package/sing-box/description
-  Sing-box is a universal proxy platform which supports hysteria, SOCKS, Shadowsocks,
-  ShadowTLS, Tor, trojan, VLess, VMess, WireGuard and so on.
+define Download/sing-box
+  FILE:=$(PKG_SOURCE)
+  URL:=$(PKG_SOURCE_URL)
+  HASH:=skip
 endef
+$(eval $(call Download,sing-box))
 
-define Package/sing-box/config
-  if PACKAGE_sing-box
-    config SING_BOX_BUILD_ACME
-    bool "Build with ACME TLS certificate issuer support"
-
-    config SING_BOX_BUILD_CLASH_API
-    bool "Build with Clash API support"
-    default y
-
-    config SING_BOX_BUILD_DHCP
-    bool "Build with DHCP support"
-
-    config SING_BOX_BUILD_ECH
-    bool "Build with TLS ECH extension support"
-    default y
-
-    config SING_BOX_BUILD_EMBEDDED_TOR
-    bool "Build with embedded Tor support"
-    depends on BROKEN
-
-    config SING_BOX_BUILD_GRPC
-    bool "Build with standard gPRC support"
-    default y
-    help
-      Standard gRPC has good compatibility but poor performance.
-
-    config SING_BOX_BUILD_GVISOR
-    bool "Build with gVisor support"
-    default y
-
-    config SING_BOX_BUILD_QUIC
-    bool "Build with QUIC support"
-    default y
-    help
-      Required by HTTP3 DNS transports, Naive inbound,
-      Hysteria inbound / outbound, and v2ray QUIC transport.
-
-    config SING_BOX_BUILD_REALITY_SERVER
-    bool "Build with REALITY TLS server support"
-
-    config SING_BOX_BUILD_UTLS
-    bool "Build with uTLS support"
-    default y
-
-    config SING_BOX_BUILD_V2RAY_API
-    bool "Build with V2Ray API support"
-
-    config SING_BOX_BUILD_WIREGUARD
-    bool "Build with WireGuard support"
-    default y
-  endif
+define Build/Compile
+  # 直接将下载下来的二进制文件重命名以便后续处理
+  cp $(DL_DIR)/$(PKG_SOURCE) $(PKG_BUILD_DIR)/sing-box
 endef
-
-GO_PKG_TAGS:=$(subst $(space),$(comma),$(strip \
-	$(if $(CONFIG_SING_BOX_BUILD_ACME),with_acme) \
-	$(if $(CONFIG_SING_BOX_BUILD_CLASH_API),with_clash_api) \
-	$(if $(CONFIG_SING_BOX_BUILD_DHCP),with_dhcp) \
-	$(if $(CONFIG_SING_BOX_BUILD_EMBEDDED_TOR),with_embedded_tor) \
-	$(if $(CONFIG_SING_BOX_BUILD_GRPC),with_grpc) \
-	$(if $(CONFIG_SING_BOX_BUILD_GVISOR),with_gvisor) \
-	$(if $(CONFIG_SING_BOX_BUILD_QUIC),with_quic) \
-	$(if $(CONFIG_SING_BOX_BUILD_REALITY_SERVER),with_reality_server) \
-	$(if $(CONFIG_SING_BOX_BUILD_UTLS),with_utls) \
-	$(if $(CONFIG_SING_BOX_BUILD_V2RAY_API),with_v2ray_api) \
-	$(if $(CONFIG_SING_BOX_BUILD_WIREGUARD),with_wireguard) \
-))
 
 define Package/sing-box/conffiles
 /etc/sing-box/
 endef
 
 define Package/sing-box/install
-	$(call GoPackage/Package/Install/Bin,$(1))
+	# 1. 安装主程序
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/sing-box $(1)/usr/bin/sing-box
 
+	# 2. 安装配置文件 (注意：官方二进制包内没有 config.json)
+	# 如果你的项目目录有默认配置，请将其放在 package/.../sing-box/files/config.json 并使用下方指令
 	$(INSTALL_DIR) $(1)/etc/sing-box
-	$(INSTALL_CONF) $(PKG_BUILD_DIR)/release/config/config.json $(1)/etc/sing-box
+	# $(INSTALL_CONF) ./files/config.json $(1)/etc/sing-box/config.json
 
+	# 3. 安装防火墙 nft 规则
 	$(INSTALL_DIR) $(1)/etc/sing-box
 	$(INSTALL_CONF) ./files/tproxy.nft $(1)/etc/sing-box
 
+	# 4. 安装脚本
 	$(INSTALL_DIR) $(1)/etc/sing-box/scripts
 	$(INSTALL_BIN) ./root/etc/sing-box/scripts/update_china_ip.sh $(1)/etc/sing-box/scripts
 
+	# 5. 安装 init.d 启动项
 	$(INSTALL_DIR) $(1)/etc/init.d/
 	$(INSTALL_BIN) ./files/sing-box.init $(1)/etc/init.d/sing-box
 endef
 
-$(eval $(call GoBinPackage,sing-box))
 $(eval $(call BuildPackage,sing-box))

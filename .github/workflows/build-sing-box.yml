@@ -1,0 +1,69 @@
+name: Auto Build Sing-Box
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # 每天凌晨 2 点检查更新
+  workflow_dispatch:     # 支持手动触发
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.version }}
+      should_build: ${{ steps.version.outputs.build }}
+    steps:
+      - name: Get Latest Version
+        id: version
+        run: |
+          LATEST_TAG=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | jq -r .tag_name)
+          EXISTING_RELEASE=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/tags/$LATEST_TAG | jq -r .tag_name)
+          if [ "$LATEST_TAG" != "$EXISTING_RELEASE" ]; then
+            echo "version=$LATEST_TAG" >> $GITHUB_OUTPUT
+            echo "build=true" >> $GITHUB_OUTPUT
+          else
+            echo "build=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    needs: check-version
+    if: needs.check-version.outputs.should_build == 'true'
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            goarch: arm64
+          - arch: amd64
+            goarch: amd64
+          - arch: arm
+            goarch: arm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Build
+        run: |
+          git clone -b ${{ needs.check-version.outputs.new_version }} --depth 1 https://github.com/SagerNet/sing-box.git source
+          cd source
+          CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.goarch }} go build -tags with_clash_api,with_grpc,with_gvisor,with_quic,with_utls,with_wireguard -trimpath -ldflags="-s -w" -o sing-box ./cmd/sing-box
+          sudo apt-get install -y upx && upx --best sing-box
+          mv sing-box ../sing-box-linux-${{ matrix.arch }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.check-version.outputs.new_version }}
+          files: sing-box-linux-*
+
+  cleanup:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep Latest 3 Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 获取所有 Release ID 并按创建时间排序，删除超过 3 个的旧版本
+          gh release list --limit 100 --json tagName,databaseId --jq '. | sort_by(.databaseId) | reverse | .[3:] | .[].tagName' | xargs -I {} gh release delete {} -y
