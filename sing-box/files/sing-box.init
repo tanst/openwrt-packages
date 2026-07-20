@@ -130,6 +130,21 @@ start_service() {
         return 0
     fi
 
+    # ========== 检测网络可达 ==========
+    log_info "Waiting for internet connection..."
+    local max_wait=60  # 最多等待 60 秒
+    local count=0
+    while ! ping -c 1 -W 1 223.5.5.5 >/dev/null 2>&1; do
+        sleep 2
+        count=$((count+2))
+        if [ $count -ge $max_wait ]; then
+            log_error "Internet still not ready after ${max_wait}s, attempting to start anyway..."
+            break
+        fi
+    done
+    log_info "Internet is ready, proceeding to start sing-box."
+    # ========================================
+
     mkdir -p "$RUN_DIR" || {
         log_error "Failed to create run directory: $RUN_DIR"
         return 1
