@@ -72,7 +72,11 @@ cleanup_firewall() {
 }
 
 setup_dns() {
-    log_info "Setting up DNS hijack..."
+    log_info "Setting up DNS hijack and disabling dnsmasq cache..."
+
+    # 关闭 dnsmasq 缓存，兼容所有 OpenWrt 版本
+    uci set dhcp.@dnsmasq[0].cachesize='0'
+    uci commit dhcp
 
     mkdir -p "$DNSMASQ_DIR" || {
         log_error "Failed to create dnsmasq directory: $DNSMASQ_DIR"
