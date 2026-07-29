@@ -26,7 +26,7 @@ define Package/sslh
 	SECTION:=net
 	CATEGORY:=Network
 	SUBMENU:=Routing and Redirection
-	TITLE:=SSL/SSH multiplexer (minimal, sslh-fork binary only)
+	TITLE:=SSL/SSH multiplexer (minimal, sslh-select binary only)
 	DEPENDS:=+libconfig +libcap +libpcre2 +libproxyprotocol
 	URL:=https://rutschle.net/tech/sslh/README.html
 endef
@@ -36,12 +36,12 @@ MAKE_FLAGS += \
 	USE_PROXYPROTOCOL=1
 
 define Build/Compile
-	$(call Build/Compile/Default,sslh-fork)
+	$(call Build/Compile/Default,sslh-select)
 endef
 
 define Package/sslh/install
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/sslh-fork $(1)/usr/sbin/sslh
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/sslh-select $(1)/usr/sbin/sslh
 endef
 
 $(eval $(call BuildPackage,sslh))
