@@ -23,16 +23,17 @@ PKG_LICENSE_FILES:=COPYING
 include $(INCLUDE_DIR)/package.mk
 
 define Package/sslh
-  SECTION:=net
-  CATEGORY:=Network
-  SUBMENU:=Routing and Redirection
-  TITLE:=SSL/SSH multiplexer (minimal, sslh-fork binary only)
-  DEPENDS:=+libconfig +libcap +libpcre2
-  URL:=https://rutschle.net/tech/sslh/README.html
+	SECTION:=net
+	CATEGORY:=Network
+	SUBMENU:=Routing and Redirection
+	TITLE:=SSL/SSH multiplexer (minimal, sslh-fork binary only)
+	DEPENDS:=+libconfig +libcap +libpcre2 +libproxyprotocol
+	URL:=https://rutschle.net/tech/sslh/README.html
 endef
 
 MAKE_FLAGS += \
-	USELIBCAP=1
+	USELIBCAP=1 \
+	USE_PROXYPROTOCOL=1
 
 define Build/Compile
 	$(call Build/Compile/Default,sslh-fork)
