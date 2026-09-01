@@ -179,6 +179,18 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅ 当前版本：$VERSION"
 
+# 最后检测访问 Google Static 的延迟
+echo "🔎 检测 Google Static 访问延迟..."
+LATENCY_SEC=$(curl -s -o /dev/null -w "%{time_total}" https://www.gstatic.com/generate_204 2>/dev/null)
+
+if [ -n "$LATENCY_SEC" ] && [ "$LATENCY_SEC" != "0" ]; then
+    LATENCY_MS=$(awk -v s="$LATENCY_SEC" 'BEGIN { printf "%.0f", s * 1000 }')
+    echo "✅ Google Static 访问延迟：${LATENCY_MS} ms"
+else
+    echo "❌ Google Static 访问失败，可能网络异常或被墙。"
+    exit 1
+fi
+
 # 清理临时文件
 cd /
 rm -rf "$TMP_DIR"
